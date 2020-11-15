@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import api from './services/api';
 
 import {
   SafeAreaView,
@@ -11,14 +12,33 @@ import {
 } from "react-native";
 
 export default function App() {
+  const [repositorios, setRepositorios] = useState([]);
+
+  // Chama a API (método GET, rota /repositories)
+  useEffect(() => {
+    api.get('/repositories').then(resp => {
+        setRepositorios(resp.data);
+    })
+  }, []);
+    
   async function handleLikeRepository(id) {
     // Implement "Like Repository" functionality
+    await api.post(`repositories/${id}/like`);
+
+    const indice = repositorios.findIndex(rep => rep.id === id)
+    
+    if (indice >= 0) {
+      repositorios[indice].likes++;
+      setRepositorios([...repositorios]);
+    }        
   }
 
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#7159c1" />
       <SafeAreaView style={styles.container}>
+      
+      {/*** Template original
         <View style={styles.repositoryContainer}>
           <Text style={styles.repository}>Repository 1</Text>
 
@@ -50,6 +70,44 @@ export default function App() {
             <Text style={styles.buttonText}>Curtir</Text>
           </TouchableOpacity>
         </View>
+      */}
+
+        <FlatList             
+          data={repositorios}
+          keyExtractor={repo => repo.id}
+          renderItem={({ item }) => (           
+            <View style={styles.repositoryContainer}>
+              <Text style={styles.repository}>
+                  {item.title}
+              </Text>
+            
+              <View style={styles.techsContainer}>
+                {item.techs.map(tech => (
+                  <Text style={styles.tech}>
+                    {tech}
+                  </Text>  
+                ))}
+              </View> 
+
+              <View style={styles.likesContainer}>
+                <Text style={styles.likeText}
+                  testID={`repository-likes-${item.id}`}
+                >
+                  {item.likes} curtidas
+                </Text>
+              </View> 
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleLikeRepository(item.id)}
+                testID={`like-button-${item.id}`}
+              >
+                <Text style={styles.buttonText}>Curtir</Text>
+              </TouchableOpacity>
+            </View>         
+          )}
+        />
+
       </SafeAreaView>
     </>
   );
@@ -105,3 +163,6 @@ const styles = StyleSheet.create({
     padding: 15,
   },
 });
+
+//listar os repositorios da API (title, techs, ${repository.likes} curtidas)
+//curtir um repositorio listado (botão "Curtir")
